@@ -62,7 +62,7 @@ export default function Header() {
     },
   ].filter(Boolean) as MenuProps["items"];
   return (
-    <header className="container py-8 flex items-center justify-between">
+    <header className="max-w-default default:mx-auto mx-8 py-8 flex items-center justify-between">
       <div>
         <Link to={"/"}>
           <h1 className="text-2xl font-bold">MALE SNEAKER</h1>

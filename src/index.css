@@ -1,16 +1,10 @@
 @import "tailwindcss";
 
-.container {
-  max-width: 1440px;
-  margin: 0 auto;
+@theme {
+  --breakpoint-default: 1440px;
+  --container-default: 1440px;
 }
 
-@media screen and (max-width: 1440px) {
-  .container {
-    max-width: auto;
-    margin: 0 15px;
-  }
-}
 .custom-disabled-item {
   color: black !important;
   cursor: default !important;
