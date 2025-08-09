@@ -1,14 +1,10 @@
 import { CaretDownOutlined } from "@ant-design/icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "../../../utils";
 import type { IMenuItem } from "./_options";
 
 const SideBarItems = ({ item }: { item: IMenuItem }) => {
-  const [isMenuActive, setIsMenuActive] = useState(true);
-  const handelClick = () => {
-    return setIsMenuActive(!isMenuActive);
-  };
   const location = useLocation();
 
   const isActive = (path: any) => {
@@ -18,15 +14,24 @@ const SideBarItems = ({ item }: { item: IMenuItem }) => {
     }
     return false;
   };
-
   const isItemActive = isActive(item);
+  const [isMenuActive, setIsMenuActive] = useState(!isItemActive);
+  useEffect(() => {
+    if (isItemActive) {
+      setIsMenuActive(false);
+    }
+  }, []);
+  const handelClick = () => {
+    return setIsMenuActive(!isMenuActive);
+  };
+
   return (
     <li>
       <div
         onClick={handelClick}
         className={`${
           isItemActive ? "text-blue-400" : "text-white"
-        } flex justify-between items-center cursor-pointer`}
+        } flex justify-between items-center cursor-pointer text-sm`}
       >
         {item.children || !item.route ? (
           <p className="flex items-center gap-3">
@@ -55,7 +60,7 @@ const SideBarItems = ({ item }: { item: IMenuItem }) => {
             }
           )}
         >
-          <ul className="ml-8 mt-2 flex flex-col gap-2 text-sm">
+          <ul className="ml-8 mt-4 flex flex-col gap-3 text-sm">
             {item.children.map((item, index) => (
               <li key={index}>
                 <NavLink
