@@ -89,7 +89,7 @@ export default function Footer() {
                   </a>
                 </li>
                 <li>
-                  <a href="">
+                  <a href="https://www.instagram.com/phuc.n204/">
                     <InstagramOutlined />
                   </a>
                 </li>
