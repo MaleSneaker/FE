@@ -1,7 +1,12 @@
+import ProductInfo from "./components/ProductInfo";
+import SimilarProducts from "./components/SimilarProducts";
+
 export default function ProductDetail() {
   return (
-    <div>
-      Chi tiết sản phẩm
-    </div>
-  )
+    <>
+      <ProductInfo />
+      <hr className="mt-20 "/>
+      <SimilarProducts />
+    </>
+  );
 }

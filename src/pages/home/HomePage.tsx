@@ -6,9 +6,8 @@ export default function HomePage() {
   return (
     <>
       <Banner />
-      <HomeNewBanner/>
-      <NewProduct/>
-
+      <HomeNewBanner />
+      <NewProduct />
     </>
   );
 }
