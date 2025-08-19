@@ -54,7 +54,7 @@ const CreateCategory = () => {
           >
             <Input
               className="h-[45px]"
-              placeholder="Nhập email của bạn"
+              placeholder="Nhập danh mục của bạn"
             ></Input>
           </Form.Item>
           <Form.Item
