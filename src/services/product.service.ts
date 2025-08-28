@@ -13,3 +13,8 @@ export const updateStatusProduct = async (id: string, status: boolean) => {
   const { data } = await instance.patch(`/products/delete/${id}`, { status });
   return data;
 };
+
+export const createProduct = async(body: Omit<IProduct, "_id" | "createdAt" | "updatedAt" | "isDeleted">)=>{
+  const res = await instance.post("/products/create", body)
+  return res.data
+}
