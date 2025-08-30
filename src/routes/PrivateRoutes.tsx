@@ -9,6 +9,7 @@ import UpdateCategory from "../pages/admins/categories/update/UpdateCategory";
 import Dashboard from "../pages/admins/dashboard/DashBoard";
 import CreateProduct from "../pages/admins/product/create/CreateProduct";
 import ListProduct from "../pages/admins/product/ListProduct";
+import UpdateProduct from "../pages/admins/product/update/UpdateProduct";
 
 const PrivateRoutes = [
   {
@@ -55,6 +56,10 @@ const PrivateRoutes = [
       {
         path: "/admin/products/create",
         element: <CreateProduct />,
+      },
+      {
+        path: "/admin/products/edit/:id",
+        element: <UpdateProduct />,
       },
     ],
   },

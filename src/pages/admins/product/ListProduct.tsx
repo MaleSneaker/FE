@@ -187,7 +187,7 @@ export default function ListProduct() {
       width: 200,
       render: (_: any, record: IProduct) => (
         <div>
-          <Link to={`/admin/categories/edit/${record._id}`}>
+          <Link to={`/admin/products/edit/${record._id}`}>
             <EditOutlined className="inline-block" /> Cập nhật
           </Link>
           <p
