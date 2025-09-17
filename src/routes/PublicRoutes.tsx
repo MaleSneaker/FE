@@ -13,7 +13,7 @@ const PublicRoutes = [
         element: <HomePage />,
       },
       {
-        path: "productDetail",
+        path: "/product/:id",
         element: <ProductDetail />,
       },
 
