@@ -11,9 +11,11 @@ import {
 import { Badge, Dropdown, Tooltip, type MenuProps } from "antd";
 import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
+import { useCart } from "../../../context/CartContext";
 
 export default function Header() {
   const { isLogged, user, setIsLogged, setUser } = useAuth();
+  const { quantity } = useCart();
   const handleLogout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("accessToken");
@@ -103,7 +105,7 @@ export default function Header() {
             </Link>
           </Dropdown>
           <Link to={"/cart"}>
-            <Badge count={0} showZero>
+            <Badge count={quantity} showZero>
               <ShoppingCartOutlined className="text-2xl" />
             </Badge>
           </Link>

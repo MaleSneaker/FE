@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import type { IProduct } from "../../../types/product";
-import { Button, InputNumber } from "antd";
+import { Button, InputNumber, Spin } from "antd";
+import { useToast } from "../../../context/ToastProvider";
+import { addToCart } from "../../../services/cart.service";
+import { useCart } from "../../../context/CartContext";
 
 const ActionProduct = ({ product }: { product: IProduct }) => {
   const [selectedSize, setSelectedSize] = useState<null | {
@@ -8,6 +11,9 @@ const ActionProduct = ({ product }: { product: IProduct }) => {
     value: string;
   }>(null);
   const [quantity, setQuantity] = useState(1);
+  const [loadingAddCart, setLoadingAddCart] = useState(false);
+  const { setQuantity: setQuantityCart } = useCart();
+  const toast = useToast();
   useEffect(() => {
     if (product) {
       const availableSize = product?.sizes?.find((item) => item.stock > 0);
@@ -15,6 +21,26 @@ const ActionProduct = ({ product }: { product: IProduct }) => {
     }
   }, [product]);
   const isOutOfStock = product?.sizes?.every((item) => item.stock < 1);
+  const handleAddToCart = async () => {
+    if (loadingAddCart) return;
+    setLoadingAddCart(true);
+    try {
+      const { data } = await addToCart({
+        productId: product?._id as string,
+        size: selectedSize?.value as string,
+        quantity: quantity,
+      });
+      console.log(data);
+      setQuantityCart(data.data.items.length);
+      if (data.success) {
+        setLoadingAddCart(false);
+        toast("success", data.message);
+      }
+    } catch (error) {
+      setLoadingAddCart(false);
+      console.log(error);
+    }
+  };
   return (
     <div>
       {isOutOfStock ? (
@@ -121,8 +147,11 @@ const ActionProduct = ({ product }: { product: IProduct }) => {
             Sản phẩm đã hết hàng
           </button>
         ) : (
-          <button className="w-full cursor-pointer border-2 border-black bg-white py-2 font-semibold text-black duration-300 hover:bg-black hover:text-white">
-            Thêm vào giỏ hàng
+          <button
+            onClick={handleAddToCart}
+            className="w-full cursor-pointer border-2 border-black bg-white py-2 font-semibold text-black duration-300 hover:bg-black hover:text-white"
+          >
+            {loadingAddCart ? <Spin /> : "Thêm vào giỏ hàng"}
           </button>
         )}
       </div>

@@ -1,5 +1,6 @@
 import ClientLayout from "../components/layouts/ClientLayout";
 import AuthPage from "../pages/auth/AuthPage";
+import CartDetail from "../pages/cart/CartDetail";
 import HomePage from "../pages/home/HomePage";
 import ProductDetail from "../pages/productDetail/ProductDetail";
 
@@ -16,7 +17,10 @@ const PublicRoutes = [
         path: "/product/:id",
         element: <ProductDetail />,
       },
-
+      {
+        path: "/cart",
+        element: <CartDetail />,
+      },
       {
         path: "/login",
         element: <AuthPage />,
