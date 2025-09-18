@@ -1,98 +1,105 @@
+import { Link, useNavigate, useParams } from "react-router-dom";
 import ProductSlider from "../../components/common/ProductSlider";
+import { formatCurrency } from "../../utils";
+import ThumbnailProductsDetail from "./components/ThumbnailDetailProduct";
+import { useEffect, useState } from "react";
+import type { IProduct } from "../../types/product";
+import { getDetailProduct } from "../../services/product.service";
+import { useToast } from "../../context/ToastProvider";
+import ActionProduct from "./components/ActionProduct";
+import { Spin } from "antd";
 export default function ProductDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const toast = useToast();
+  const [product, setProduct] = useState<IProduct>({} as IProduct);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const data = await getDetailProduct(id as string);
+
+        setProduct(data);
+        setLoading(false);
+      } catch (error) {
+        setLoading(false);
+        toast("info", "Có lỗi xảy ra vui lòng thử lại!");
+        navigate("/");
+      }
+    })();
+  }, []);
   return (
     <>
-      <div className="max-w-default mx-auto p-4 bg-white">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Hình ảnh sản phẩm */}
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
-              <img
-                src="https://bizweb.dktcdn.net/100/413/756/products/air-jordan-1-heritage-gs-575441-1667471269083.jpg?v=1730995505350"
-                alt="Sản phẩm chính"
-                className="w-full h-96 object-cover rounded-lg"
-              />
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-              <img
-                src="https://bizweb.dktcdn.net/100/413/756/products/air-jordan-1-heritage-gs-575441-1667471269083.jpg?v=1730995505350"
-                alt="Hình phụ 1"
-                className="w-full h-24 object-cover rounded-lg cursor-pointer"
-              />
-              <img
-                src="https://bizweb.dktcdn.net/100/413/756/products/air-jordan-1-heritage-gs-575441-1667471269083.jpg?v=1730995505350"
-                alt="Hình phụ 2"
-                className="w-full h-24 object-cover rounded-lg cursor-pointer"
-              />
-              <img
-                src="https://bizweb.dktcdn.net/100/413/756/products/air-jordan-1-heritage-gs-575441-1667471269083.jpg?v=1730995505350"
-                alt="Hình phụ 3"
-                className="w-full h-24 object-cover rounded-lg cursor-pointer"
-              />
-              <img
-                src="https://bizweb.dktcdn.net/100/413/756/products/air-jordan-1-heritage-gs-575441-1667471269083.jpg?v=1730995505350"
-                alt="Hình phụ 4"
-                className="w-full h-24 object-cover rounded-lg cursor-pointer"
-              />
-            </div>
-          </div>
-
-          {/* Thông tin sản phẩm */}
-          <div className="space-y-4">
-            <h1 className="text-2xl font-bold">Tên sản phẩm</h1>
-            <p className="text-gray-600">Giá: 1.200.000đ</p>
-            <div className="flex space-x-4">
-              <div>
-                <p className="font-semibold">Kích thước</p>
-                <div className="flex space-x-2 mt-2">
-                  <button className="border border-gray-300 px-3 py-1 rounded hover:bg-gray-100">
-                    Size 2
-                  </button>
-                  <button className="border border-gray-300 px-3 py-1 rounded hover:bg-gray-100">
-                    Size 4
-                  </button>
-                  <button className="border border-gray-300 px-3 py-1 rounded hover:bg-gray-100">
-                    Size 6
-                  </button>
-                  <button className="border border-gray-300 px-3 py-1 rounded hover:bg-gray-100">
-                    Size 8
-                  </button>
-                  <button className="border border-gray-300 px-3 py-1 rounded hover:bg-gray-100">
-                    Size 10
-                  </button>
-                </div>
+      {loading ? (
+        <div className="flex justify-center items-center h-[90vh]">
+          <Spin size="large" />
+        </div>
+      ) : (
+        <>
+          <div className="max-w-default mx-auto  bg-white">
+            <div className="border-b border-gray-300 pb-4">
+              <div className="flex  items-center gap-2 text-sm font-normal xl:mx-auto">
+                <Link to={"/"} className="uppercase">
+                  Trang chủ
+                </Link> /
+                <Link to={"/product"} className="uppercase">
+                  Tất cả sản phẩm
+                </Link>
+                / <h3 className="uppercase">Chi tiết sản phẩm</h3>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <p className="font-semibold">Số lượng</p>
-              <button className="border border-gray-300 px-2 py-1">-</button>
-              <span>1</span>
-              <button className="border border-gray-300 px-2 py-1">+</button>
-            </div>
-            <div className="space-y-2">
-              <button className="w-full bg-black text-white py-2 rounded hover:bg-gray-800">
-                Thêm vào giỏ
-              </button>
-              <button className="w-full bg-gray-800 text-white py-2 rounded hover:bg-gray-900">
-                Mua ngay
-              </button>
-            </div>
-            <p className="text-gray-600 text-sm">
-              Giao hàng tận nơi trên toàn quốc. Đổi trả dễ dàng trong vòng 7
-              ngày nếu sản phẩm lỗi. Liên hệ để được tư vấn chi tiết.
-            </p>
-            <div className="flex items-center space-x-2">
-              <span className="text-blue-500">Chat ngay</span>
-              <span className="text-blue-500">Zalo</span>
-            </div>
+            {product && (
+              <>
+                <div className="mx-6 my-20 max-w-7xl xl:mx-auto">
+                  <div className="grid grid-cols-[60%_30%] gap-15">
+                    <div>
+                      {!product.images ? (
+                        <div className="flex justify-center items-center">
+                          Sản phẩm không có ảnh
+                        </div>
+                      ) : (
+                        <ThumbnailProductsDetail
+                          images={product.images as string[]}
+                        />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-[#070707] uppercase">
+                        {product?.name}
+                      </h3>
+                      <div className="mt-2 text-sm text-[#070707]">
+                        <p className="capitalize">
+                          Thương hiệu:{" "}
+                          {product?.brand?.name || "Chưa phân loại"}
+                        </p>
+                        <p className="capitalize">
+                          Danh mục:{" "}
+                          {product?.category?.name || "Chưa phân loại"}
+                        </p>
+                        <p className="uppercase">Mã sản phẩm: {product._id}</p>
+                      </div>
+                      <p className="my-4 text-2xl font-bold text-[#070707]">
+                        {formatCurrency(product.price)}
+                      </p>
+                      <ActionProduct product={product} />
+                    </div>
+                  </div>
+                </div>
+                <div className="my-12">
+                  <h2 className="text-xl font-medium">Mô tả của sản phẩm</h2>
+                  <p className="mt-4">{product.description}</p>
+                </div>
+              </>
+            )}
           </div>
-        </div>
-      </div>
-      <ProductSlider
-        isPending={false}
-        data={[]}
-        title="SẢN PHẨM TƯƠNG TỰ"
-      />
+          <ProductSlider
+            isPending={false}
+            data={[]}
+            title="SẢN PHẨM TƯƠNG TỰ"
+          />
+        </>
+      )}
     </>
   );
 }

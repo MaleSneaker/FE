@@ -12,8 +12,14 @@ export interface IProduct {
   price: number;
   sold: number;
   sizes: ISize[];
-  category: string;
-  brand: string;
+  category: {
+    name: string;
+    _id: string;
+  };
+  brand: {
+    name: string;
+    _id: string;
+  };
   isDeleted: boolean;
   createdAt?: string;
   updatedAt?: string;
