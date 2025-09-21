@@ -24,13 +24,17 @@ const CartQuantityItem = ({
     null
   );
   const [quantity, setQuantity] = useState(quantityValue);
+  const [isDisable, setDisable] = useState(false);
 
   const handleDebouncedUpdateQuantity = useMemo(() => {
     return _.debounce(async (itemData) => {
+      setDisable(true);
       try {
         await updateQuantityCartItem(itemData);
-        fetchCart();
+        await fetchCart();
+        setDisable(false);
       } catch (error) {
+        setDisable(false);
         console.log(error);
       }
     }, 600);
@@ -74,7 +78,7 @@ const CartQuantityItem = ({
     <div className="mt-2 flex items-center">
       <Button
         type="default"
-        disabled={quantity < 2}
+        disabled={quantity < 2 || isDisable}
         onClick={handleDecreaseQuantity}
         icon={
           <MinusOutlined className="transform transition duration-500 hover:rotate-180" />
@@ -99,7 +103,7 @@ const CartQuantityItem = ({
       <Button
         type="default"
         onClick={handleIncreaseQuantity}
-        disabled={quantity === stock}
+        disabled={quantity === stock || isDisable}
         icon={
           <PlusOutlined className="transform transition duration-500 hover:rotate-180" />
         }

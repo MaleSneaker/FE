@@ -1,7 +1,7 @@
 import { Form, Table } from "antd";
 import TextArea from "antd/es/input/TextArea";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "../../context/ToastProvider";
 import { getMyCart } from "../../services/cart.service";
 import { columns } from "./components/CartDetailColumn";
@@ -55,18 +55,31 @@ const CartDetail = () => {
                 </Form.Item>
               </Form>
 
-              <div>
-                <div className="mr-10 flex justify-end">
+              <div className="mr-10 flex justify-end">
+                {data && data.length > 0 && (
                   <span className="block text-xl font-semibold">
                     <span className="text-sm font-medium">Tổng:</span>{" "}
-                    {data &&
-                      data.length > 0 &&
-                      formatCurrency(
-                        data?.reduce((acc, curr: any) => {
-                          return acc + curr.product.price * curr.quantity;
-                        }, 0)
-                      )}
+                    {formatCurrency(
+                      data?.reduce((acc, curr: any) => {
+                        return acc + curr.product.price * curr.quantity;
+                      }, 0)
+                    )}
                   </span>
+                )}
+                <div className="flex items-center justify-center gap-4">
+                  {data.length > 0 && (
+                    <p className="mt-5 cursor-pointer rounded-full border-[1px] border-black bg-black px-8 py-2 font-bold text-white duration-300 hover:bg-black/80">
+                      Thanh toán
+                    </p>
+                  )}
+                  {data.length === 0 && (
+                    <Link
+                      className="mt-5 cursor-pointer rounded-full border-[1px] border-black bg-black px-8 py-2 font-bold text-white duration-300 hover:bg-black/80"
+                      to={"/"}
+                    >
+                      Bạn chưa có sản phẩm nào. Tiếp tục mua hàng?
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>

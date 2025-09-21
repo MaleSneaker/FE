@@ -36,9 +36,11 @@ const ActionProduct = ({ product }: { product: IProduct }) => {
         setLoadingAddCart(false);
         toast("success", data.message);
       }
-    } catch (error) {
+    } catch (error: any) {
       setLoadingAddCart(false);
-      console.log(error);
+      if (!error?.response?.data?.success) {
+        toast("info", error?.response?.data?.message);
+      }
     }
   };
   return (
