@@ -23,7 +23,7 @@ export const columns = (fetchCart: () => Promise<void>) => {
       dataIndex: "product",
       key: "product",
       render: (_, record) => {
-        return !record.size.isAvailable ? (
+        return record.size.isAvailable ? (
           <div
             className={`flex ${
               record.stock === 0 ? "opacity-70" : "opacity-100"

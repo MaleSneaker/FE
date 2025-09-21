@@ -68,9 +68,12 @@ const CartDetail = () => {
                 )}
                 <div className="flex items-center justify-center gap-4">
                   {data.length > 0 && (
-                    <p className="mt-5 cursor-pointer rounded-full border-[1px] border-black bg-black px-8 py-2 font-bold text-white duration-300 hover:bg-black/80">
+                    <Link
+                      to={"/checkout/shipping"}
+                      className="mt-5 cursor-pointer rounded-full border-[1px] border-black bg-black px-8 py-2 font-bold text-white duration-300 hover:bg-black/80"
+                    >
                       Thanh toán
-                    </p>
+                    </Link>
                   )}
                   {data.length === 0 && (
                     <Link
