@@ -22,6 +22,9 @@ const CheckoutLayout = () => {
           setError(true);
         }
         setItems(data.items);
+        if (data.items.length > 0) {
+          localStorage.setItem("items", JSON.stringify(data.items));
+        }
       } catch (error) {
         console.error("Lỗi khi lấy giỏ hàng:", error);
       } finally {
