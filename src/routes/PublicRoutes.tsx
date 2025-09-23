@@ -4,6 +4,9 @@ import CartDetail from "../pages/cart/CartDetail";
 import OrderSuccess from "../pages/checkout/orderSuccess";
 import HomePage from "../pages/home/HomePage";
 import ProductDetail from "../pages/productDetail/ProductDetail";
+import Profile from "../pages/profile/Profile";
+import MyOrders from "../pages/profile/MyOrders";
+import UserOrderDetail from "../pages/profile/UserOrderDetail";
 
 const PublicRoutes = [
   {
@@ -21,6 +24,18 @@ const PublicRoutes = [
       {
         path: "/cart",
         element: <CartDetail />,
+      },
+      {
+        path: "/profile",
+        element: <Profile />,
+      },
+      {
+        path: "/profile/my-orders",
+        element: <MyOrders />,
+      },
+      {
+        path: "/orders/:id",
+        element: <UserOrderDetail />,
       },
       {
         path: "/login",
