@@ -31,12 +31,17 @@ const ShippingPage = () => {
       })();
     }
   }, [selectedProvince]);
-  const handleChangeProvince = (id: string) => {
-    setSelectedProvince(id);
+  const handleChangeProvince = (data: any) => {
+    setSelectedProvince(data.value);
     form.setFieldValue("wardCode", undefined);
   };
   const handleSubmit = (values: any) => {
-    localStorage.setItem("shipping", JSON.stringify(values));
+    const payload = {
+      ...values,
+      province: values.province.label,
+      ward: values.wardCode.label,
+    };
+    localStorage.setItem("shipping", JSON.stringify(payload));
     navigate("/checkout/payment");
   };
   return (
@@ -142,6 +147,7 @@ const ShippingPage = () => {
                 }}
                 allowClear
                 placeholder="Chọn Tỉnh/ Thành phố"
+                labelInValue
               />
             </Form.Item>
             <Form.Item
@@ -163,6 +169,7 @@ const ShippingPage = () => {
                 }))}
                 disabled={!selectedProvince}
                 allowClear
+                labelInValue
               />
             </Form.Item>
           </div>

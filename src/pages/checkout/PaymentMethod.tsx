@@ -1,11 +1,28 @@
-import { Breadcrumb, Radio } from "antd";
-import { Link } from "react-router-dom";
+import { Breadcrumb, Radio, Spin } from "antd";
+import { Link, useNavigate } from "react-router-dom";
 import codImg from "../../assets/cash.jpg";
 import { formatCurrency } from "../../utils";
 import { useState } from "react";
+import { useGetCheckout } from "../../hooks/useGetCheckout";
+import { createOrder } from "../../services/order.service";
+import { useToast } from "../../context/ToastProvider";
 const PaymentMethod = () => {
   const [paymentMethod, setPaymentMethod] = useState("cod");
-
+  const [loading, setLoading] = useState(false);
+  const payload = useGetCheckout();
+  const navigate = useNavigate();
+  const toast = useToast();
+  const handleCheckout = async () => {
+    setLoading(true);
+    try {
+      await createOrder(payload);
+      setLoading(false);
+      navigate("/success");
+    } catch (error: any) {
+      setLoading(false);
+      toast("error", `Đặt hàng thất bại: ${error.response.data.message}`);
+    }
+  };
   return (
     <div>
       {/* BREADCRUMB */}
@@ -77,10 +94,12 @@ const PaymentMethod = () => {
       </div>
       <div className="mt-8 flex ">
         <button
+          disabled={loading}
+          onClick={handleCheckout}
           type="submit"
-          className="flex cursor-pointer items-center justify-center rounded-md bg-[#338dbc] px-4 py-4 text-xs font-medium text-white uppercase duration-300 hover:bg-cyan-500"
+          className="flex cursor-pointer items-center min-w-[150px] justify-center rounded-md bg-[#338dbc] px-4 py-4 text-xs font-medium text-white uppercase duration-300 hover:bg-cyan-500"
         >
-          Xác nhận đặt hàng
+          {loading ? <Spin /> : "Xác nhận đặt hàng"}
         </button>
       </div>
     </div>
