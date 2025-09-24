@@ -5,52 +5,10 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useToast } from "../../../context/ToastProvider";
 import type { IOrder, IOrderItem } from "../../../types/order";
-// import { getOrderDetail } from "../../../services/order.service";
+import { getOrderDetail, updateOrderStatus, cancelOrder } from "../../../services/order.service";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
-
-// Mock data cho demo giao diện
-const mockOrderDetail: IOrder = {
-  _id: "67123456789abcdef0123456",
-  userId: "user123",
-  customerInfo: {
-    name: "Nguyễn Văn Duy",
-    email: "admin@gmail.com",
-    phone: "0123456789"
-  },
-  receiverInfo: {
-    name: "Nguyễn Văn Duy",
-    email: "admin@gmail.com", 
-    phone: "0123456789"
-  },
-  address: {
-    province: "Hà Nội, Việt Nam",
-    ward: "Phường Trung Văn, Quận Nam Từ Liêm",
-    detail: "Số 123, Phùng Khoang"
-  },
-  items: [
-    {
-      productId: "product1",
-      name: "Giày thể thao Chitu 7 PRO Nam",
-      size: "40",
-      quantity: 2,
-      price: 1590000
-    },
-    {
-      productId: "product2", 
-      name: "Tất thể thao Nike Pro",
-      size: "M",
-      quantity: 1,
-      price: 120000
-    }
-  ],
-  note: "Giao hàng trong giờ hành chính, gọi trước 15 phút",
-  status: "pending" as const,
-  totalPrice: 3300000,
-  createdAt: "2025-09-17T09:02:04.000Z",
-  updatedAt: "2025-09-17T09:02:04.000Z"
-};
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -71,18 +29,21 @@ export default function OrderDetailPage() {
   const fetchOrderDetail = async (orderId: string) => {
     try {
       setLoading(true);
-      // Comment API call để sử dụng mock data
-      // const response = await getOrderDetail(orderId);
+      const response = await getOrderDetail(orderId);
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Handle backend response structure - check if data is nested
+      const orderData = response?.data || response;
       
-      // Tìm order theo ID hoặc sử dụng mock data
-      const foundOrder = orderId === mockOrderDetail._id ? mockOrderDetail : mockOrderDetail;
-      setOrder(foundOrder);
+      if (orderData && orderData._id) {
+        setOrder(orderData);
+      } else {
+        toast('error', 'Dữ liệu đơn hàng không hợp lệ');
+        setOrder(null);
+      }
     } catch (error) {
       console.error('Error fetching order detail:', error);
       toast('error', 'Không thể tải chi tiết đơn hàng');
+      setOrder(null);
     } finally {
       setLoading(false);
     }
@@ -90,23 +51,37 @@ export default function OrderDetailPage() {
 
   // Handle status update
   const handleUpdateStatus = async (status: IOrder['status']) => {
-    if (!order) return;
+    if (!order) {
+      console.error('No order found');
+      return;
+    }
+    
+
     
     setProcessing(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await updateOrderStatus(order._id, { status });
+      console.log('Update status response:', response);
       
-      // Update local state
-      setOrder({
-        ...order,
-        status: status,
-        updatedAt: new Date().toISOString()
-      });
+      // Re-fetch order detail to get the latest data from server
+      await fetchOrderDetail(order._id);
       
       toast('success', `Đã cập nhật trạng thái đơn hàng thành "${getStatusText(status)}"`);
     } catch (error) {
-      toast('error', 'Không thể cập nhật trạng thái đơn hàng');
+      console.error('Error updating order status:', error);
+      
+      // Handle specific backend error messages
+      let errorMessage = 'Lỗi không xác định';
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { data?: { message?: string } } };
+        if (axiosError.response?.data?.message) {
+          errorMessage = axiosError.response.data.message;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      toast('error', `Không thể cập nhật trạng thái đơn hàng: ${errorMessage}`);
     } finally {
       setProcessing(false);
     }
@@ -121,13 +96,11 @@ export default function OrderDetailPage() {
     
     setProcessing(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await cancelOrder(order._id, { by: 'admin', description: cancelReason });
       
-      // Update local state
+      // Update local state - backend may not set status to cancelled automatically
       setOrder({
         ...order,
-        status: 'cancelled',
         canceled: {
           by: 'admin',
           description: cancelReason
@@ -135,8 +108,14 @@ export default function OrderDetailPage() {
         updatedAt: new Date().toISOString()
       });
       
+      // Re-fetch to get updated data from server
+      if (id) {
+        fetchOrderDetail(id);
+      }
+      
       toast('success', 'Đã hủy đơn hàng thành công');
     } catch (error) {
+      console.error('Error canceling order:', error);
       toast('error', 'Không thể hủy đơn hàng');
     } finally {
       setProcessing(false);
@@ -154,7 +133,8 @@ export default function OrderDetailPage() {
   };
 
   // Get status color
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | undefined) => {
+    if (!status) return "default";
     switch (status) {
       case "pending": return "orange";
       case "confirmed": return "blue";
@@ -167,7 +147,8 @@ export default function OrderDetailPage() {
   };
 
   // Get status text
-  const getStatusText = (status: string) => {
+  const getStatusText = (status: string | undefined) => {
+    if (!status) return "Không xác định";
     switch (status) {
       case "pending": return "Chờ xác nhận";
       case "confirmed": return "Đã xác nhận";  
@@ -179,24 +160,65 @@ export default function OrderDetailPage() {
     }
   };
 
+
+
+  // Get payment method text
+  const getPaymentMethodText = (paymentMethod: string | undefined) => {
+    if (!paymentMethod) return "Chưa xác định";
+    switch (paymentMethod) {
+      case "cod": return "Thanh toán khi nhận hàng";
+      case "online": return "Thanh toán online";
+      default: return paymentMethod;
+    }
+  };
+
+  // Get payment status text and color based on isPaid
+  const getPaymentDisplayText = (isPaid: boolean | undefined) => {
+    return isPaid ? "Đã thanh toán" : "Chưa thanh toán";
+  };
+
+  const getPaymentDisplayColor = (isPaid: boolean | undefined) => {
+    return isPaid ? "green" : "orange";
+  };
+
   // Product columns for table
   const productColumns = [
     {
       title: "Sản phẩm",
       dataIndex: "name",
       key: "name",
-      render: (name: string, record: IOrderItem) => (
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-gray-200 rounded-md flex items-center justify-center">
-            <span className="text-xs text-gray-500">IMG</span>
+      render: (name: string, record: IOrderItem) => {
+        // Get product image - check if productId is populated with product info
+        const productImage = typeof record.productId === 'object' && record.productId?.thumbnail 
+          ? record.productId.thumbnail 
+          : `https://via.placeholder.com/48?text=${record.name.charAt(0)}`;
+        
+        return (
+          <div className="flex items-center gap-3">
+            <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
+              <img 
+                src={productImage}
+                alt={name}
+                className="w-full h-full object-cover rounded-lg"
+                onError={(e) => {
+                  // Fallback to placeholder if image fails to load
+                  const target = e.target as HTMLImageElement;
+                  target.src = `https://via.placeholder.com/64?text=${record.name.charAt(0)}`;
+                }}
+              />
+            </div>
+            <div>
+              <Text strong className="block">{name}</Text>
+              <Text type="secondary" className="text-sm">Size: {record.size}</Text>
+              {typeof record.productId === 'object' && record.productId?._id && (
+                <Text type="secondary" className="text-xs block">
+                  ID: {record.productId._id.slice(-6).toUpperCase()}
+                </Text>
+              )}
+            </div>
           </div>
-          <div>
-            <Text strong>{name}</Text>
-            <br />
-            <Text type="secondary">Size: {record.size}</Text>
-          </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       title: "Đơn giá",
@@ -256,10 +278,10 @@ export default function OrderDetailPage() {
           >
             Quay lại
           </Button>
-          <Title level={3} className="mb-0">Chi tiết đơn hàng #{order._id.slice(-8).toUpperCase()}</Title>
+          <Title level={3} className="mb-0">Chi tiết đơn hàng #{order._id ? order._id.slice(-8).toUpperCase() : 'N/A'}</Title>
         </div>
         <div className="flex gap-2">
-          {order.status === 'pending' && (
+          {!order.canceled?.description && order.status === 'pending' && (
             <>
               <Popconfirm
                 title="Xác nhận đơn hàng"
@@ -287,7 +309,7 @@ export default function OrderDetailPage() {
               </Button>
             </>
           )}
-          {order.status === 'confirmed' && (
+          {!order.canceled?.description && order.status === 'confirmed' && (
             <>
               <Popconfirm
                 title="Chuyển sang đang giao"
@@ -314,7 +336,7 @@ export default function OrderDetailPage() {
               </Button>
             </>
           )}
-          {order.status === 'shipping' && (
+          {!order.canceled?.description && order.status === 'shipping' && (
             <Popconfirm
               title="Đánh dấu đã giao"
               description="Bạn có chắc chắn đơn hàng đã được giao thành công?"
@@ -332,7 +354,7 @@ export default function OrderDetailPage() {
               </Button>
             </Popconfirm>
           )}
-          {order.status === 'delivered' && (
+          {!order.canceled?.description && order.status === 'delivered' && (
             <Popconfirm
               title="Hoàn thành đơn hàng"
               description="Bạn có chắc chắn muốn hoàn thành đơn hàng này?"
@@ -350,6 +372,13 @@ export default function OrderDetailPage() {
               </Button>
             </Popconfirm>
           )}
+          {order.canceled?.description && (
+            <div className="text-center">
+              <Tag color="red" className="px-4 py-2 text-sm">
+                Đơn hàng đã bị hủy
+              </Tag>
+            </div>
+          )}
         </div>
       </div>
 
@@ -361,31 +390,51 @@ export default function OrderDetailPage() {
             <Col span={12}>
               <Descriptions column={1} size="small">
                 <Descriptions.Item label="Mã đơn hàng">
-                  <Text code>#{order._id.slice(-8).toUpperCase()}</Text>
+                  <Text code>#{order._id ? order._id.slice(-8).toUpperCase() : 'N/A'}</Text>
                 </Descriptions.Item>
                 <Descriptions.Item label="Ngày đặt hàng">
                   {dayjs(order.createdAt).format("DD/MM/YYYY HH:mm")}
                 </Descriptions.Item>
+                <Descriptions.Item label="Số lượng sản phẩm">
+                  <Text strong className="text-green-600">
+                    {order.items?.length || 0} loại sản phẩm ({order.items?.reduce((total, item) => total + item.quantity, 0) || 0} sản phẩm)
+                  </Text>
+                </Descriptions.Item>
                 <Descriptions.Item label="Phương thức thanh toán">
-                  Thanh toán khi nhận hàng
+                  {order.paymentMethod ? getPaymentMethodText(order.paymentMethod) : "Chưa xác định"}
+                </Descriptions.Item>
+                <Descriptions.Item label="Phí vận chuyển">
+                  <div>
+                    <Text strong className="text-blue-600">
+                      {formatCurrency(order.feeShipping || 30000)}
+                    </Text>
+                    {!order.feeShipping && (
+                      <>
+                        <br />
+                        <Text type="secondary" className="text-xs">
+                          (Phí mặc định)
+                        </Text>
+                      </>
+                    )}
+                  </div>
                 </Descriptions.Item>
               </Descriptions>
             </Col>
             <Col span={12}>
               <Descriptions column={1} size="small">
                 <Descriptions.Item label="Trạng thái đơn hàng">
-                  <Tag color={getStatusColor(order.status)}>
-                    {getStatusText(order.status)}
+                  <Tag color={getStatusColor(order.canceled && order.canceled.description ? 'cancelled' : order.status)}>
+                    {getStatusText(order.canceled && order.canceled.description ? 'cancelled' : order.status)}
+                  </Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="Trạng thái thanh toán">
+                  <Tag color={getPaymentDisplayColor(order.isPaid)}>
+                    {getPaymentDisplayText(order.isPaid)}
                   </Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="Tổng tiền">
                   <Text strong className="text-lg text-red-600">
-                    {formatCurrency(order.totalPrice)}
-                  </Text>
-                </Descriptions.Item>
-                <Descriptions.Item label="Phí vận chuyển">
-                  <Text strong className="text-lg text-red-600">
-                    30.000 ₫
+                    {formatCurrency(order.totalPrice || 0)}
                   </Text>
                 </Descriptions.Item>
               </Descriptions>
@@ -399,13 +448,13 @@ export default function OrderDetailPage() {
           <Title level={5} className="mb-4">Thông tin người nhận</Title>
           <Descriptions column={2} size="small">
             <Descriptions.Item label="Tên người nhận">
-              {order.receiverInfo.name}
+              {order.receiverInfo?.name || 'Chưa cập nhật'}
             </Descriptions.Item>
             <Descriptions.Item label="Email">
-              {order.receiverInfo.email}
+              {order.receiverInfo?.email || 'Chưa cập nhật'}
             </Descriptions.Item>
             <Descriptions.Item label="Số điện thoại">
-              {order.receiverInfo.phone}
+              {order.receiverInfo?.phone || 'Chưa cập nhật'}
             </Descriptions.Item>
           </Descriptions>
         </Card>
@@ -415,13 +464,13 @@ export default function OrderDetailPage() {
           <Title level={5} className="mb-4">Địa chỉ giao hàng</Title>
           <Descriptions column={1} size="small">
             <Descriptions.Item label="Địa chỉ chi tiết">
-              {order.address.detail}
+              {order.address?.detail || 'Chưa cập nhật'}
             </Descriptions.Item>
             <Descriptions.Item label="Phường/Xã">
-              {order.address.ward}
+              {order.address?.ward || 'Chưa cập nhật'}
             </Descriptions.Item>
             <Descriptions.Item label="Tỉnh/Thành phố">
-              {order.address.province}
+              {order.address?.province || 'Chưa cập nhật'}
             </Descriptions.Item>
           </Descriptions>
         </Card>
@@ -430,11 +479,11 @@ export default function OrderDetailPage() {
         <Card>
           <Title level={5} className="mb-4">Chi tiết đơn hàng</Title>
           <div className="mb-4">
-            <Text type="secondary">{order.items.length} sản phẩm</Text>
+            <Text type="secondary">{order.items?.length || 0} sản phẩm</Text>
           </div>
           
           <Table
-            dataSource={order.items}
+            dataSource={order.items || []}
             columns={productColumns}
             pagination={false}
             rowKey="productId"
@@ -449,17 +498,17 @@ export default function OrderDetailPage() {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <Text>Tạm tính:</Text>
-                  <Text>{formatCurrency(order.totalPrice)}</Text>
+                  <Text>{formatCurrency((order.totalPrice || 0) - (order.feeShipping || 0))}</Text>
                 </div>
                 <div className="flex justify-between">
                   <Text>Phí vận chuyển:</Text>
-                  <Text>{formatCurrency(0)}</Text>
+                  <Text>{formatCurrency(order.feeShipping || 0)}</Text>
                 </div>
                 <Divider style={{ margin: "8px 0" }} />
                 <div className="flex justify-between">
                   <Text strong>Tổng cộng:</Text>
                   <Text strong className="text-lg text-red-600">
-                    {formatCurrency(order.totalPrice)}
+                    {formatCurrency(order.totalPrice || 0)}
                   </Text>
                 </div>
               </div>
@@ -483,9 +532,9 @@ export default function OrderDetailPage() {
               <div>
                 <Text strong className="text-red-600">Lý do hủy đơn:</Text>
                 <br />
-                <Text>Hủy bởi: {order.canceled.by}</Text>
+                <Text>Hủy bởi: {order.canceled.by || 'Không xác định'}</Text>
                 <br />
-                <Text>{order.canceled.description}</Text>
+                <Text>{order.canceled.description || 'Không có mô tả'}</Text>
               </div>
             </>
           )}

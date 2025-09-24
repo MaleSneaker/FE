@@ -5,25 +5,18 @@ import {
   Typography,
   Descriptions,
   Button,
-  Modal,
-  Form,
-  Input,
-  Upload,
-  message,
   Row,
   Col,
   Tag,
 } from 'antd';
 import {
   UserOutlined,
-  EditOutlined,
-  UploadOutlined,
   PhoneOutlined,
   MailOutlined,
   CalendarOutlined,
   HistoryOutlined,
 } from '@ant-design/icons';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastProvider';
 import { formatDate } from '../../utils';
@@ -33,43 +26,11 @@ const { Title, Text } = Typography;
 const Profile: React.FC = () => {
   const { user, updateUser } = useAuth();
   const showToast = useToast();
-  
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [editModalVisible, setEditModalVisible] = useState(false);
-  const [form] = Form.useForm();
 
-  const handleEditProfile = () => {
-    form.setFieldsValue({
-      userName: user?.userName,
-      email: user?.email,
-      phone: user?.phone,
-    });
-    setEditModalVisible(true);
-  };
-
-  interface UpdateProfileValues {
-    userName: string;
-    email: string;
-    phone: string;
-  }
-
-  const handleUpdateProfile = async (values: UpdateProfileValues) => {
-    setLoading(true);
-    try {
-      setTimeout(() => {
-        updateUser({ ...user!, ...values });
-        showToast('success', 'Cập nhật thông tin thành công');
-        setEditModalVisible(false);
-        setLoading(false);
-      }, 1000);
-    } catch {
-      showToast('error', 'Cập nhật thông tin thất bại');
-      setLoading(false);
-    }
-  };
-
-  const handleUploadAvatar = () => {
-    message.info('Tính năng đang phát triển');
+  const handleViewOrders = () => {
+    navigate('/profile/my-orders');
   };
 
   if (!user) {
@@ -109,14 +70,18 @@ const Profile: React.FC = () => {
             </div>
 
             <div className="text-center">
-              <Button 
-                type="primary" 
-                icon={<EditOutlined />}
-                onClick={handleEditProfile}
-                size="large"
-              >
-                Chỉnh sửa thông tin
-              </Button>
+              <div className="space-y-3">
+                <Button 
+                  type="primary" 
+                  icon={<HistoryOutlined />}
+                  onClick={handleViewOrders}
+                  size="large"
+                  block
+                >
+                  Xem lịch sử đơn hàng
+                </Button>
+
+              </div>
             </div>
           </Card>
         </Col>
@@ -187,62 +152,6 @@ const Profile: React.FC = () => {
           </Card>
         </Col>
       </Row>
-
-      <Modal
-        title="Chỉnh sửa thông tin cá nhân"
-        open={editModalVisible}
-        onCancel={() => setEditModalVisible(false)}
-        footer={null}
-        width={500}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleUpdateProfile}
-        >
-          <Form.Item
-            label="Tên người dùng"
-            name="userName"
-            rules={[
-              { required: true, message: 'Vui lòng nhập tên người dùng' },
-              { min: 2, message: 'Tên phải có ít nhất 2 ký tự' }
-            ]}
-          >
-            <Input placeholder="Nhập tên người dùng" />
-          </Form.Item>
-
-          <Form.Item
-            label="Email"
-            name="email"
-            rules={[
-              { required: true, message: 'Vui lòng nhập email' },
-              { type: 'email', message: 'Email không hợp lệ' }
-            ]}
-          >
-            <Input placeholder="Nhập email" disabled />
-          </Form.Item>
-
-          <Form.Item
-            label="Số điện thoại"
-            name="phone"
-            rules={[
-              { required: true, message: 'Vui lòng nhập số điện thoại' },
-              { pattern: /^[0-9]{10,11}$/, message: 'Số điện thoại không hợp lệ' }
-            ]}
-          >
-            <Input placeholder="Nhập số điện thoại" />
-          </Form.Item>
-
-          <div className="flex justify-end gap-2">
-            <Button onClick={() => setEditModalVisible(false)}>
-              Hủy
-            </Button>
-            <Button type="primary" htmlType="submit" loading={loading}>
-              Cập nhật
-            </Button>
-          </div>
-        </Form>
-      </Modal>
     </div>
   );
 };

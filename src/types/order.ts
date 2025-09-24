@@ -1,5 +1,12 @@
 export interface IOrderItem {
-  productId: string;
+  productId: string | {
+    _id: string;
+    name: string;
+    thumbnail: string;
+    images: string[];
+    price: number;
+    description?: string;
+  };
   name: string;
   size: string;
   quantity: number;
@@ -32,9 +39,10 @@ export interface IOrder {
   items: IOrderItem[];
   note?: string;
   canceled?: ICanceled;
+  feeShipping: number;
+  paymentMethod: 'cod' | 'online';
+  isPaid: boolean;
   status: 'pending' | 'confirmed' | 'shipping' | 'delivered' | 'done' | 'cancelled';
-  paymentStatus?: 'unpaid' | 'paid' | 'refunded' | 'failed';
-  paymentMethod?: 'cod' | 'vnpay' | 'momo' | 'banking';
   totalPrice: number;
   createdAt: string;
   updatedAt: string;
@@ -53,6 +61,8 @@ export interface ICreateOrderRequest {
   address: IAddress;
   items: IOrderItem[];
   note?: string;
+  feeShipping?: number;
+  paymentMethod?: 'cod' | 'online';
   totalPrice: number;
 }
 

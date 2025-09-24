@@ -29,7 +29,8 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { useToast } from '../../context/ToastProvider';
 import { formatCurrency, formatDate } from '../../utils';
-import type { IOrder, IOrderItem } from '../../types/order';
+import { getMyOrderDetail, cancelMyOrder } from '../../services/order.service';
+import type { IOrder } from '../../types/order';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -46,62 +47,29 @@ const UserOrderDetail: React.FC = () => {
   const [reviewForm] = Form.useForm();
   const [cancelForm] = Form.useForm();
 
-  // Mock order data for demonstration
-  const mockOrder: IOrder = {
-    _id: id || '1',
-    userId: 'user123',
-    customerInfo: {
-      name: 'Nguyễn Văn A',
-      email: 'customer@gmail.com',
-      phone: '0901234567'
-    },
-    receiverInfo: {
-      name: 'Nguyễn Văn A',
-      email: 'receiver@gmail.com',
-      phone: '0901234567'
-    },
-    address: {
-      province: 'TP.HCM',
-      ward: 'Phường 1, Quận 1',
-      detail: '123 Đường ABC, Phường 1, Quận 1'
-    },
-    items: [
-      {
-        productId: 'prod1',
-        name: 'Nike Air Max 270 React',
-        size: '42',
-        quantity: 1,
-        price: 3500000
-      },
-      {
-        productId: 'prod2',
-        name: 'Adidas Ultraboost 22',
-        size: '41',
-        quantity: 1,
-        price: 4200000
-      }
-    ],
-    totalPrice: 7700000,
-    status: 'shipping',
-    note: 'Giao hàng nhanh trong giờ hành chính',
-    createdAt: '2024-01-20T09:15:00Z',
-    updatedAt: '2024-01-22T11:45:00Z'
-  };
+  
 
   const fetchOrderDetail = useCallback(async () => {
+    if (!id) return;
+    
     setLoading(true);
     try {
-      // TODO: Replace with actual API call
-      // const response = await userService.getOrderDetail(id);
-      // setOrder(response.data);
+      const response = await getMyOrderDetail(id);
       
-      // Using mock data for now
-      setTimeout(() => {
-        setOrder(mockOrder);
-        setLoading(false);
-      }, 1000);
-    } catch {
+      // Handle backend response structure - check if data is nested
+      const orderData = response?.data || response;
+      
+      if (orderData && orderData._id) {
+        setOrder(orderData);
+      } else {
+        showToast('error', 'Dữ liệu đơn hàng không hợp lệ');
+        setOrder(null);
+      }
+    } catch (error) {
+      console.error('Error fetching order detail:', error);
       showToast('error', 'Không thể tải thông tin đơn hàng');
+      setOrder(null);
+    } finally {
       setLoading(false);
     }
   }, [id, showToast]);
@@ -110,88 +78,120 @@ const UserOrderDetail: React.FC = () => {
     fetchOrderDetail();
   }, [fetchOrderDetail]);
 
-  const getStatusStep = (status: string) => {
+  const getStatusStep = (status: string, canceled?: any) => {
     const steps = [
       { key: 'pending', title: 'Chờ xác nhận', icon: <ShoppingCartOutlined /> },
       { key: 'confirmed', title: 'Đã xác nhận', icon: <CheckCircleOutlined /> },
       { key: 'shipping', title: 'Đang giao hàng', icon: <TruckOutlined /> },
       { key: 'delivered', title: 'Đã giao hàng', icon: <GiftOutlined /> },
+      { key: 'done', title: 'Hoàn thành', icon: <CheckCircleOutlined /> },
     ];
 
-    if (status === 'cancelled') {
-      return [
-        { key: 'pending', title: 'Chờ xác nhận', icon: <ShoppingCartOutlined /> },
-        { key: 'cancelled', title: 'Đã hủy', icon: <CloseCircleOutlined /> },
-      ];
+    // Check if order is cancelled (either by status or by having canceled info)
+    if (status === 'cancelled' || (canceled && canceled.description)) {
+      return {
+        steps: [
+          { key: 'pending', title: 'Chờ xác nhận', icon: <ShoppingCartOutlined /> },
+          { key: 'cancelled', title: 'Đã hủy', icon: <CloseCircleOutlined /> },
+        ],
+        currentIndex: 1
+      };
     }
 
     const currentIndex = steps.findIndex(step => step.key === status);
     return { steps, currentIndex };
   };
 
-  const getStatusTag = (status: string) => {
+  const getStatusTag = (status: string, canceled?: any) => {
     const statusMap = {
       pending: { color: 'orange', text: 'Chờ xác nhận' },
       confirmed: { color: 'blue', text: 'Đã xác nhận' },
-      preparing: { color: 'cyan', text: 'Đang chuẩn bị' },
       shipping: { color: 'purple', text: 'Đang giao hàng' },
       delivered: { color: 'green', text: 'Đã giao hàng' },
+      done: { color: 'success', text: 'Hoàn thành' },
       cancelled: { color: 'red', text: 'Đã hủy' }
     };
     
+    // If order has cancel info, show as cancelled regardless of status
+    const effectiveStatus = (canceled && canceled.description) ? 'cancelled' : status;
+    
     return (
-      <Tag color={statusMap[status as keyof typeof statusMap]?.color || 'default'} className="text-sm px-3 py-1">
-        {statusMap[status as keyof typeof statusMap]?.text || status}
+      <Tag color={statusMap[effectiveStatus as keyof typeof statusMap]?.color || 'default'} className="text-sm px-3 py-1">
+        {statusMap[effectiveStatus as keyof typeof statusMap]?.text || effectiveStatus}
       </Tag>
     );
   };
 
   const handleCancelOrder = async (values: { reason: string }) => {
+    if (!order || !order._id) {
+      showToast('error', 'Thông tin đơn hàng không hợp lệ');
+      return;
+    }
+
     try {
+      await cancelMyOrder(order._id, { 
+        by: 'customer', 
+        description: values.reason 
+      });
       
-      setTimeout(() => {
-        showToast('success', 'Hủy đơn hàng thành công');
-        setCancelModalVisible(false);
-        setOrder(prev => prev ? { ...prev, status: 'cancelled', canceled: { by: 'customer', description: values.reason } } : null);
-      }, 1000);
-    } catch {
+      showToast('success', 'Hủy đơn hàng thành công');
+      setCancelModalVisible(false);
+      cancelForm.resetFields();
+      
+      // Update local state - backend doesn't auto set status to cancelled, 
+      // but we can assume if cancel is successful and order has canceled info, it's cancelled
+      setOrder(prev => prev ? { 
+        ...prev, 
+        canceled: { 
+          by: 'customer', 
+          description: values.reason 
+        } 
+      } : null);
+      
+      // Re-fetch to get updated data from server
+      if (id) {
+        fetchOrderDetail();
+      }
+    } catch (error) {
+      console.error('Error canceling order:', error);
       showToast('error', 'Không thể hủy đơn hàng');
     }
   };
 
-  const handleReviewProduct = async (values: { rating: number; comment: string }) => {
-    try {
-      
-      setTimeout(() => {
-        showToast('success', 'Đánh giá sản phẩm thành công');
-        setReviewModalVisible(false);
-        reviewForm.resetFields();
-      }, 1000);
-    } catch {
-      showToast('error', 'Không thể gửi đánh giá');
-    }
-  };
+
 
   const productColumns = [
     {
       title: 'Sản phẩm',
       dataIndex: 'name',
       key: 'name',
-      render: (name: string, record: any) => (
-        <div className="flex items-center gap-3">
-          <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
-            <img 
-              src={`https://via.placeholder.com/64?text=${record.name.charAt(0)}`}
-              alt={name}
-              className="w-full h-full object-cover rounded-lg"
-            />
+      render: (name: string, record: any) => {
+        // Get product image - check if productId is populated with product info
+        const productImage = typeof record.productId === 'object' && record.productId?.thumbnail 
+          ? record.productId.thumbnail 
+          : `https://via.placeholder.com/64?text=${record.name.charAt(0)}`;
+        
+        return (
+          <div className="flex items-center gap-3">
+            <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
+              <img 
+                src={productImage}
+                alt={name}
+                className="w-full h-full object-cover rounded-lg"
+                onError={(e) => {
+                  // Fallback to placeholder if image fails to load
+                  const target = e.target as HTMLImageElement;
+                  target.src = `https://via.placeholder.com/64?text=${record.name.charAt(0)}`;
+                }}
+              />
+            </div>
+            <div>
+              <Text strong className="block">{name}</Text>
+              <Text type="secondary" className="text-sm">Size: {record.size}</Text>
+            </div>
           </div>
-          <div>
-            <Text strong className="block">{name}</Text>
-            <Text type="secondary" className="text-sm">Size: {record.size}</Text>
-          </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       title: 'Đơn giá',
@@ -214,21 +214,6 @@ const UserOrderDetail: React.FC = () => {
         </Text>
       ),
     },
-    {
-      title: 'Thao tác',
-      key: 'action',
-      render: (_: any, record: any) => (
-        order?.status === 'delivered' && (
-          <Button
-            type="link"
-            icon={<StarOutlined />}
-            onClick={() => setReviewModalVisible(true)}
-          >
-            Đánh giá
-          </Button>
-        )
-      ),
-    },
   ];
 
   if (loading) {
@@ -247,7 +232,7 @@ const UserOrderDetail: React.FC = () => {
     );
   }
 
-  const statusInfo = getStatusStep(order.status);
+  const statusInfo = getStatusStep(order.status, order.canceled);
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -256,7 +241,7 @@ const UserOrderDetail: React.FC = () => {
         <Button
           type="text"
           icon={<ArrowLeftOutlined />}
-          onClick={() => navigate('/profile')}
+          onClick={() => navigate('/profile/my-orders')}
           className="mb-4"
         >
           Quay lại
@@ -264,11 +249,11 @@ const UserOrderDetail: React.FC = () => {
         
         <div className="flex justify-between items-start">
           <div>
-            <Title level={3}>Chi tiết đơn hàng #{order._id.slice(-6).toUpperCase()}</Title>
+            <Title level={3}>Chi tiết đơn hàng #{order._id?.slice(-6).toUpperCase() || 'N/A'}</Title>
             <Text type="secondary">Ngày đặt: {formatDate(order.createdAt)}</Text>
           </div>
           <div className="text-right">
-            {getStatusTag(order.status)}
+            {getStatusTag(order.status, order.canceled)}
           </div>
         </div>
       </div>
@@ -278,25 +263,14 @@ const UserOrderDetail: React.FC = () => {
         <Col span={24}>
           <Card>
             <Title level={5} className="mb-4">Trạng thái đơn hàng</Title>
-            {order.status !== 'cancelled' ? (
-              <Steps
-                current={(statusInfo as any).currentIndex}
-                items={(statusInfo as any).steps}
-                className="mb-4"
-              />
-            ) : (
-              <Steps
-                current={1}
-                status="error"
-                items={[
-                  { title: 'Chờ xác nhận', icon: <ShoppingCartOutlined /> },
-                  { title: 'Đã hủy', icon: <CloseCircleOutlined /> },
-                ]}
-                className="mb-4"
-              />
-            )}
+            <Steps
+              current={statusInfo.currentIndex}
+              status={order.status === 'cancelled' || (order.canceled && order.canceled.description) ? 'error' : 'process'}
+              items={statusInfo.steps}
+              className="mb-4"
+            />
             
-            {order.status === 'pending' && (
+            {order.status === 'pending' && !(order.canceled && order.canceled.description) && (
               <div className="text-center mt-4">
                 <Button 
                   danger 
@@ -315,16 +289,18 @@ const UserOrderDetail: React.FC = () => {
             <Title level={5} className="mb-4">Thông tin đơn hàng</Title>
             <Descriptions column={1} size="small">
               <Descriptions.Item label="Người nhận">
-                {order.receiverInfo.name}
+                {order.receiverInfo?.name || 'Chưa cập nhật'}
               </Descriptions.Item>
               <Descriptions.Item label="Số điện thoại">
-                {order.receiverInfo.phone}
+                {order.receiverInfo?.phone || 'Chưa cập nhật'}
               </Descriptions.Item>
               <Descriptions.Item label="Email">
-                {order.receiverInfo.email}
+                {order.receiverInfo?.email || 'Chưa cập nhật'}
               </Descriptions.Item>
               <Descriptions.Item label="Địa chỉ giao hàng">
-                {order.address.detail}, {order.address.ward}, {order.address.province}
+                {order.address?.detail && order.address?.ward && order.address?.province
+                  ? `${order.address.detail}, ${order.address.ward}, ${order.address.province}`
+                  : 'Chưa cập nhật'}
               </Descriptions.Item>
               {order.note && (
                 <Descriptions.Item label="Ghi chú">
@@ -341,18 +317,31 @@ const UserOrderDetail: React.FC = () => {
             <Title level={5} className="mb-4">Thông tin thanh toán</Title>
             <div className="space-y-3">
               <div className="flex justify-between">
+                <Text>Phương thức thanh toán:</Text>
+                <Text>
+                  {order.paymentMethod === 'cod' ? 'Thanh toán khi nhận hàng' : 'Thanh toán online'}
+                </Text>
+              </div>
+              <div className="flex justify-between">
+                <Text>Trạng thái thanh toán:</Text>
+                <Tag color={order.isPaid ? 'green' : 'orange'}>
+                  {order.isPaid ? 'Đã thanh toán' : 'Chưa thanh toán'}
+                </Tag>
+              </div>
+              <Divider style={{ margin: "8px 0" }} />
+              <div className="flex justify-between">
                 <Text>Tạm tính:</Text>
-                <Text>{formatCurrency(order.totalPrice)}</Text>
+                <Text>{formatCurrency((order.totalPrice || 0) - (order.feeShipping || 0))}</Text>
               </div>
               <div className="flex justify-between">
                 <Text>Phí vận chuyển:</Text>
-                <Text>{formatCurrency(0)}</Text>
+                <Text>{formatCurrency(order.feeShipping || 0)}</Text>
               </div>
               <Divider style={{ margin: "8px 0" }} />
               <div className="flex justify-between">
                 <Text strong>Tổng cộng:</Text>
                 <Text strong className="text-lg text-red-600">
-                  {formatCurrency(order.totalPrice)}
+                  {formatCurrency(order.totalPrice || 0)}
                 </Text>
               </div>
             </div>
@@ -364,7 +353,7 @@ const UserOrderDetail: React.FC = () => {
           <Card>
             <Title level={5} className="mb-4">Sản phẩm đã đặt</Title>
             <Table
-              dataSource={order.items}
+              dataSource={order.items || []}
               columns={productColumns}
               pagination={false}
               rowKey="productId"
@@ -373,11 +362,18 @@ const UserOrderDetail: React.FC = () => {
         </Col>
 
         {/* Cancel Reason */}
-        {order.canceled && (
+        {order.canceled && order.canceled.description && (
           <Col span={24}>
             <Card>
               <Title level={5} className="mb-4">Lý do hủy đơn</Title>
-              <Text>{order.canceled.description}</Text>
+              <Text>{order.canceled.description || 'Không có lý do cụ thể'}</Text>
+              {order.canceled.by && (
+                <div className="mt-2">
+                  <Text type="secondary">
+                    Hủy bởi: {order.canceled.by === 'customer' ? 'Khách hàng' : 'Quản trị viên'}
+                  </Text>
+                </div>
+              )}
             </Card>
           </Col>
         )}
@@ -407,42 +403,6 @@ const UserOrderDetail: React.FC = () => {
             </Button>
             <Button type="primary" danger htmlType="submit">
               Xác nhận hủy đơn
-            </Button>
-          </div>
-        </Form>
-      </Modal>
-
-      {/* Review Product Modal */}
-      <Modal
-        title="Đánh giá sản phẩm"
-        open={reviewModalVisible}
-        onCancel={() => setReviewModalVisible(false)}
-        footer={null}
-      >
-        <Form form={reviewForm} onFinish={handleReviewProduct} layout="vertical">
-          <Form.Item
-            label="Đánh giá"
-            name="rating"
-            rules={[{ required: true, message: 'Vui lòng chọn số sao' }]}
-          >
-            <Rate />
-          </Form.Item>
-          <Form.Item
-            label="Nhận xét"
-            name="comment"
-            rules={[{ required: true, message: 'Vui lòng nhập nhận xét' }]}
-          >
-            <TextArea
-              rows={4}
-              placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm..."
-            />
-          </Form.Item>
-          <div className="flex justify-end gap-2">
-            <Button onClick={() => setReviewModalVisible(false)}>
-              Hủy
-            </Button>
-            <Button type="primary" htmlType="submit">
-              Gửi đánh giá
             </Button>
           </div>
         </Form>
