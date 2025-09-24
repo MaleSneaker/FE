@@ -1,12 +1,13 @@
 import ClientLayout from "../components/layouts/ClientLayout";
 import AuthPage from "../pages/auth/AuthPage";
 import CartDetail from "../pages/cart/CartDetail";
-import OrderSuccess from "../pages/checkout/orderSuccess";
 import HomePage from "../pages/home/HomePage";
 import ProductDetail from "../pages/productDetail/ProductDetail";
 import Profile from "../pages/profile/Profile";
 import MyOrders from "../pages/profile/MyOrders";
 import UserOrderDetail from "../pages/profile/UserOrderDetail";
+import ProductsPage from "../pages/products/ProductsPage";
+import OrderSuccess from "../pages/checkout/OrderSuccess";
 
 const PublicRoutes = [
   {
@@ -16,6 +17,10 @@ const PublicRoutes = [
       {
         path: "",
         element: <HomePage />,
+      },
+      {
+        path: "/product",
+        element: <ProductsPage />,
       },
       {
         path: "/product/:id",

@@ -126,7 +126,7 @@ export default function Footer() {
           </div>
           <div className="w-full md:w-1/2 flex justify-center">
             <img
-              src="https://cdn.haitrieu.com/wp-content/uploads/2022/10/Logo-VNPAY-QR-1-300x96.png"
+              src="https://casso.vn/wp-content/uploads/2023/07/CASSO_LOGO_FINAL-02-1-1024x1024.jpg"
               alt="payment"
               className="w-24"
             />

@@ -9,9 +9,10 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import { Badge, Dropdown, Tooltip, type MenuProps } from "antd";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { useCart } from "../../../context/CartContext";
+import { useState } from "react";
 
 export default function Header() {
   const { isLogged, user, setIsLogged, setUser } = useAuth();
@@ -63,6 +64,11 @@ export default function Header() {
       onClick: handleLogout,
     },
   ].filter(Boolean) as MenuProps["items"];
+  const [search, setSearch] = useState("");
+  const navigate = useNavigate();
+  const handleSubmit = () => {
+    navigate(`/product?search=${search}`);
+  };
   return (
     <header className="max-w-default default:mx-auto mx-8 py-8 flex items-center justify-between">
       <div>
@@ -83,7 +89,14 @@ export default function Header() {
             </NavLink>
           </li>
           <li>
-            <Link to={"/"}>Sản phẩm</Link>
+            <NavLink
+              className={({ isActive }) =>
+                isActive ? "text-orange-500" : "text-black"
+              }
+              to={"/product"}
+            >
+              Sản phẩm
+            </NavLink>
           </li>
           <li>
             <Link to={"/"}>Danh mục</Link>
@@ -94,8 +107,18 @@ export default function Header() {
         </ul>
       </nav>
       <div className="flex gap-2 bg-[#F0F0F0] py-2 px-6 rounded-[30px]">
-        <SearchOutlined />
-        <input className="outline-none" type="text" placeholder="Tìm kiếm" />
+        <SearchOutlined onClick={() => handleSubmit()} />
+        <input
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleSubmit();
+            }
+          }}
+          className="outline-none"
+          type="text"
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Tìm kiếm"
+        />
       </div>
       {isLogged ? (
         <div className="flex gap-6 items-center">
