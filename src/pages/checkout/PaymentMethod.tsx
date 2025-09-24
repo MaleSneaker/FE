@@ -4,7 +4,7 @@ import codImg from "../../assets/cash.jpg";
 import { formatCurrency } from "../../utils";
 import { useState } from "react";
 import { useGetCheckout } from "../../hooks/useGetCheckout";
-import { createOrder } from "../../services/order.service";
+import { createOrder, createPayment } from "../../services/order.service";
 import { useToast } from "../../context/ToastProvider";
 const PaymentMethod = () => {
   const [paymentMethod, setPaymentMethod] = useState("cod");
@@ -14,13 +14,27 @@ const PaymentMethod = () => {
   const toast = useToast();
   const handleCheckout = async () => {
     setLoading(true);
-    try {
-      await createOrder(payload);
-      setLoading(false);
-      navigate("/success");
-    } catch (error: any) {
-      setLoading(false);
-      toast("error", `Đặt hàng thất bại: ${error.response.data.message}`);
+    if (paymentMethod === "cod") {
+      try {
+        await createOrder(payload);
+        setLoading(false);
+        navigate("/success");
+      } catch (error: any) {
+        setLoading(false);
+        toast("error", `Đặt hàng thất bại: ${error.response.data.message}`);
+      }
+    }
+    if (paymentMethod === "online") {
+      try {
+        const data = await createPayment(payload);
+        setLoading(false);
+        if (data.success) {
+          window.location.href = data.data;
+        }
+      } catch (error: any) {
+        setLoading(false);
+        toast("error", `Đặt hàng thất bại: ${error.response.data.message}`);
+      }
     }
   };
   return (
@@ -73,20 +87,20 @@ const PaymentMethod = () => {
             </div>
           </div>
           <div
-            onClick={() => setPaymentMethod("vnpay")}
+            onClick={() => setPaymentMethod("online")}
             className="flex cursor-pointer items-center gap-5 rounded-b-md border-r border-b border-l border-gray-300 px-6 py-4"
           >
-            <Radio value={"vnpay"}></Radio>
+            <Radio value={"online"}></Radio>
             <div className="flex items-center gap-2">
               <img
                 src={
-                  "https://yt3.googleusercontent.com/JM1m2wng0JQUgSg9ZSEvz7G4Rwo7pYb4QBYip4PAhvGRyf1D_YTbL2DdDjOy0qOXssJPdz2r7Q=s900-c-k-c0x00ffffff-no-rj"
+                  "https://casso.vn/wp-content/uploads/2023/07/CASSO_LOGO_FINAL-02-1-1024x1024.jpg"
                 }
-                className="w-16"
+                className="w-16 rounded-full overflow-hidden"
                 alt=""
               />
               <span className="text-sm text-[#737373]">
-                Thanh toán online VNPay
+                Thanh toán online PayOS
               </span>
             </div>
           </div>
